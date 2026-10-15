@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Good Deeds">
+  <title>Good Deeds Tracker</title>
+  <style>
+    :root {
+      --bg: #F2F2F7;
+      --card-bg: #FFFFFF;
+      --text: #000000;
+      --subtext: #8E8E93;
+      --tint: #007AFF;
+      --gold: #FF9500;
+      --green: #34C759;
+      --red: #FF3B30;
+      --purple: #AF52DE;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 20px);
+    }
+    header { padding: 12px 4px 16px; }
+    h1 { margin: 0; font-size: 28px; font-weight: 800; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .card {
+      background: var(--card-bg);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .card.active { border-color: var(--tint); }
+    .card-top { display: flex; align-items: center; justify-content: space-between; }
+    .avatar {
+      width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 18px; font-weight: 700; color: white;
+    }
+    .points { font-size: 26px; font-weight: 800; color: var(--tint); }
+    .section-title { font-size: 14px; font-weight: 700; color: var(--subtext); text-transform: uppercase; margin: 20px 4px 8px; }
+    .button-group { display: flex; flex-direction: column; gap: 8px; }
+    .deed-btn {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--card-bg); border: none; border-radius: 14px;
+      padding: 14px 16px; font-size: 16px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .deed-btn:active { transform: scale(0.99); background: #E5E5EA; }
+    .priority { border-left: 6px solid var(--gold); }
+    .pts-badge { font-weight: 800; color: var(--green); }
+    .redeem-btn { border-left: 6px solid var(--purple); color: var(--purple); }
+    .action-row { display: flex; gap: 10px; margin-top: 10px; }
+    .action-row button {
+      flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 700;
+      background: var(--card-bg); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .history-card { background: var(--card-bg); border-radius: 16px; padding: 12px 16px; margin-bottom: 8px; }
+    .history-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #F2F2F7; }
+    .history-item:last-child { border: none; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Good Deeds Tracker</h1>
+  </header>
+
+  <!-- Kids Cards -->
+  <div class="grid" id="kids-list"></div>
+
+  <!-- Prioritized Deeds -->
+  <div class="section-title">Core Priorities (Highest Rewards)</div>
+  <div class="button-group">
+    <button class="deed-btn priority" onclick="award('Pray on Time (Salah)', 25)">
+      <span>🕌 Pray on Time</span>
+      <span class="pts-badge">+25 pts</span>
+    </button>
+    <button class="deed-btn priority" onclick="award('Memorize / Recite Quran', 30)">
+      <span>📖 Memorize / Recite Quran</span>
+      <span class="pts-badge">+30 pts</span>
+    </button>
+    <button class="deed-btn priority" onclick="award('Obeyed Parents Quickly', 25)">
+      <span>❤️ Obey Parents Directly</span>
+      <span class="pts-badge">+25 pts</span>
+    </button>
+  </div>
+
+  <!-- Character & Siblings -->
+  <div class="section-title">Kindness & Siblings</div>
+  <div class="button-group">
+    <button class="deed-btn" onclick="award('Helped Sibling / Shared', 15)">
+      <span>🤝 Help / Share with Sibling</span>
+      <span class="pts-badge">+15 pts</span>
+    </button>
+    <button class="deed-btn" onclick="award('Kind Words / Resolved Conflict', 15)">
+      <span>🕊️ Kind Words / No Fighting</span>
+      <span class="pts-badge">+15 pts</span>
+    </button>
+    <button class="deed-btn" onclick="award('School & Homework Done', 15)">
+      <span>📚 Homework & School Effort</span>
+      <span class="pts-badge">+15 pts</span>
+    </button>
+  </div>
+
+  <!-- Custom Actions -->
+  <div class="section-title">Manage Points</div>
+  <div class="action-row">
+    <button onclick="addCustom()">+ Custom Deed</button>
+    <button style="color: var(--purple);" onclick="redeem()">🎁 Redeem Reward</button>
+  </div>
+
+  <!-- Log History -->
+  <div class="section-title">Recent Activity (<span id="active-child-name"></span>)</div>
+  <div class="history-card" id="history-container">
+    <div style="color: var(--subtext); text-align: center; padding: 10px;">No recent deeds logged.</div>
+  </div>
+
+  <script>
+    const defaultData = [
+      { id: 1, name: "Zinedine", age: 10, points: 0, color: "#007AFF", history: [] },
+      { id: 2, name: "Ali", age: 8, points: 0, color: "#34C759", history: [] },
+      { id: 3, name: "Maria", age: 8, points: 0, color: "#FF2D55", history: [] }
+    ];
+
+    let state = JSON.parse(localStorage.getItem('good_deeds_data')) || defaultData;
+    let selectedId = state[0].id;
+
+    function save() {
+      localStorage.setItem('good_deeds_data', JSON.stringify(state));
+      render();
+    }
+
+    function selectChild(id) {
+      selectedId = id;
+      render();
+    }
+
+    function award(title, pts) {
+      const child = state.find(c => c.id === selectedId);
+      if (!child) return;
+      child.points += pts;
+      child.history.unshift({ title, pts, date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+      save();
+    }
+
+    function addCustom() {
+      const title = prompt("What deed did they perform?");
+      if (!title) return;
+      const pts = parseInt(prompt("How many points to award?", "20"), 10);
+      if (isNaN(pts)) return;
+      award(title, pts);
+    }
+
+    function redeem() {
+      const child = state.find(c => c.id === selectedId);
+      const title = prompt("What reward are they claiming? (e.g., 30 mins screen time, ice cream)");
+      if (!title) return;
+      const cost = parseInt(prompt("Point cost to deduct:", "50"), 10);
+      if (isNaN(cost)) return;
+      if (child.points < cost) {
+        alert("Not enough points!");
+        return;
+      }
+      award(`Redeemed: ${title}`, -cost);
+    }
+
+    function render() {
+      const container = document.getElementById('kids-list');
+      container.innerHTML = state.map(c => `
+        <div class="card ${c.id === selectedId ? 'active' : ''}" onclick="selectChild(${c.id})">
+          <div class="card-top">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="avatar" style="background:${c.color}">${c.name[0]}</div>
+              <div>
+                <div style="font-weight:700; font-size:18px;">${c.name}</div>
+                <div style="font-size:13px; color:var(--subtext);">${c.age} years old</div>
+              </div>
+            </div>
+            <div class="points">${c.points} <span style="font-size:12px; color:var(--subtext);">pts</span></div>
+          </div>
+        </div>
+      `).join('');
+
+      const activeChild = state.find(c => c.id === selectedId);
+      document.getElementById('active-child-name').innerText = activeChild.name;
+
+      const histContainer = document.getElementById('history-container');
+      if (activeChild.history.length === 0) {
+        histContainer.innerHTML = '<div style="color: var(--subtext); text-align: center; padding: 10px;">No recent deeds logged.</div>';
+      } else {
+        histContainer.innerHTML = activeChild.history.slice(0, 8).map(h => `
+          <div class="history-item">
+            <div>
+              <div style="font-weight:600; font-size:15px;">${h.title}</div>
+              <div style="font-size:11px; color:var(--subtext);">${h.date}</div>
+            </div>
+            <div style="font-weight:700; color:${h.pts > 0 ? 'var(--green)' : 'var(--red)'};">
+              ${h.pts > 0 ? '+' : ''}${h.pts} pts
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
